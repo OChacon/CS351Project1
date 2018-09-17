@@ -53,12 +53,16 @@ int main(int argc, char const *argv[]) {
 
     long s = send(sockfd, msg, strlen(msg), 0);
     if(s == -1){
-        perror("didn't send");
+        perror("Didn't send");
         exit(1);
     }
     printf("Message Sent\n");
 
-    recv(sockfd, buffer, 1024, 0);
+    long r = recv(sockfd, buffer, 1024, 0);
+    if(r == -1){
+        perror("Didn't receive");
+        exit(1);
+    }
 
     printf("Ping back");
     close(sockfd);
