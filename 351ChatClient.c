@@ -62,8 +62,6 @@ int main(int argc, char const *argv[]) {
         exit(1);
     }
 
-    //- - - - - NEEDS MORE WORK PAST HERE FOR LOOP - - - - -
-
     //Send the credentials of the user
     credentials = malloc(strlen(usrname) + 1 + strlen(psswrd));
     strcpy(credentials, usrname);
@@ -73,33 +71,52 @@ int main(int argc, char const *argv[]) {
     r_msg = malloc(sizeof(buffer));
     s_msg = malloc(sizeof(buffer));
 
-    strcpy(s_msg, credentials);
+    long log_in = send(sockfd, credentials, strlen(credentials), 0);
+    if(log_in == -1){
+        perror("Didn't send credentials\n");
+        exit(1);
+    }
 
-    while(strcmp(s_msg, "#EXIT") != 0) {
+    //Infinite loop for chat, if "#EXIT" is typed, breaks out and closes the socket
+    while(1) {
 
+        //Receive incoming message from server, print the message
+        long r = recv(sockfd, buffer, 1024, 0);
+        if (r == -1) {
+            perror("Didn't receive anything from server\n");
+            exit(1);
+        }
+        else if(r == 0){
+            perror("Server has closed connection\n");
+            exit(1);
+        }
+        else{
+            for(int i = 0; i < r; i++){
+                strcat(r_msg, &buffer[i]);
+            }
+            printf(r_msg);
+        }
+
+        //Get message from stdin, if it's not "#EXIT", try and send it
         printf("> ");
         gets(s_msg);
+
+        if(strcmp(s_msg, "#EXIT") == 0){
+            break;
+        }
 
         long s2 = send(sockfd, s_msg, strlen(s_msg), 0);
         if (s2 == -1) {
             perror("Didn't send message\n");
             exit(1);
         }
-
-        long r2 = recv(sockfd, buffer, 1024, 0);
-        if (r2 == -1) {
-            perror("Didn't receive anything from server\n");
-            exit(1);
-        }
-        else{
-            for(int i = 0; i < r2; i++){
-                strcat(r_msg, &buffer[i]);
-            }
-            printf(r_msg);
-        }
     }
 
+    //Close everything down and terminate
     close(sockfd);
+    free(credentials);
+    free(r_msg);
+    free(s_msg);
     return 0;
 }
 
