@@ -7,7 +7,6 @@ typedef struct Client{
   struct Queue* savedMsgs;
   int msgCount;
   int sock;
-  int index;
   char* name;
   char* pwd;
 } Client;
