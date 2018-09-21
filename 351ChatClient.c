@@ -25,7 +25,7 @@ int main(int argc, char const *argv[]) {
     u_short DEST_PORT;
 
     //First check if # of args are correct
-    if(argc != 5){
+    if(argc != 4){
         fprintf(stderr, "Invalid arguments: must provide an IP, port number, username, and password\n");
         exit(1);
     }
@@ -35,12 +35,12 @@ int main(int argc, char const *argv[]) {
         DEST_IP = (u_short) strtoul("127.0.0.1", NULL, 0);
     }
     else{
-        DEST_IP = (u_short) strtoul(argv[1], NULL, 0);
+        DEST_IP = (u_short) strtoul(argv[0], NULL, 0);
     }
 
-    DEST_PORT = (u_short) strtoul(argv[2], NULL, 0);
-    usrname = argv[3];
-    psswrd = argv[4];
+    DEST_PORT = (u_short) strtoul(argv[1], NULL, 0);
+    usrname = argv[2];
+    psswrd = argv[3];
 
     //Create the socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -91,13 +91,16 @@ int main(int argc, char const *argv[]) {
             exit(1);
         }
         else{
-            printf("%s\n", &buffer[0]);
+            for(int i = 0; i < r; i++){
+                strcat(r_msg, &buffer[i]);
+            }
+            // printf(r_msg);
+	    printf("%s\n", &buffer[0]);
         }
 
         //Get message from stdin, if it's not "#EXIT", try and send it
         printf("> ");
         gets(s_msg);
-        strcat(s_msg, "\0");
 
         if(strcmp(s_msg, "#EXIT") == 0){
             break;
