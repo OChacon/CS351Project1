@@ -37,7 +37,7 @@ static char* makeQueueMessage(int num);
 static char* makeJoinedMessage(char* name);
 
 static void broadcastMessage(char* senderName, fd_set activeClientSet, char* msg,
-                             int numClients, Client* clients[]);
+                             int numClients, Client* clients[], int maxActiveClients);
 
 static int handleNewClient(int clientFd, Client* activeClients[], int activeNum,
                            int maxActiveNum, Client* savedClients[], int savedNum,
