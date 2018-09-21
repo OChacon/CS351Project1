@@ -76,8 +76,8 @@ static int handleNewClient(int clientFd, Client* activeClients[], int activeNum,
   // get name and password from recv()
   char buff[MESSAGE_LENGTH];
   int msgSize = recv(clientFd, buff, MESSAGE_LENGTH, 0); 
-  printf("Message from client: %s\n", buff);
-  printf("Message size: %d\n", msgSize);
+  // printf("Message from client: %s\n", buff);
+  // printf("Message size: %d\n", msgSize);
   // char* loginInfo[2];
   char clientName[msgSize];
   char clientPwd[msgSize];
@@ -101,7 +101,7 @@ static int handleNewClient(int clientFd, Client* activeClients[], int activeNum,
 
   validInt = validateClient(clientName, clientPwd, savedClients, savedNum);
 
-  printf("validInt: %d\n", validInt);
+  // printf("validInt: %d\n", validInt);
 
   switch(validInt){
     case -2:
@@ -109,6 +109,7 @@ static int handleNewClient(int clientFd, Client* activeClients[], int activeNum,
       return retInt;
     case -1:
       client = makeClient(clientFd, clientName, clientPwd);
+      // printf("New client name: %s\n", client->name);
       break;
     default:
       client = savedClients[validInt];
@@ -116,11 +117,12 @@ static int handleNewClient(int clientFd, Client* activeClients[], int activeNum,
   }
 
   openIndex = getOpenIndex(activeClients, maxActiveNum);
-  printf("open index: %d\n", openIndex);
+  // printf("open index: %d\n", openIndex);
 
   if(openIndex > -1){
     activeClients[openIndex] = client;
     retInt = 1;
+    // printf("New client name: %s\n", activeClients[openIndex]->name);
 
     if(validInt > -1){
       sendSavedMessages(client);
@@ -139,7 +141,7 @@ static int parseLoginInfo(char msgIn[], char name[], char pwd[], int msgLen){
   int nameLen = 0;
   int pwdLen = 0;
   int index = 0;
-  printf("parseLogin msgIn: %s\n", msgIn);
+  // printf("parseLogin msgIn: %s\n", msgIn);
   while(index < msgLen){
     if((int)msgIn[index] == 32){
       index++;
@@ -160,8 +162,8 @@ static int parseLoginInfo(char msgIn[], char name[], char pwd[], int msgLen){
     }
   } 
 
-  printf("nameLen: %d\n", nameLen);
-  printf("pwdLen: %d\n", pwdLen);
+  // printf("nameLen: %d\n", nameLen);
+  // printf("pwdLen: %d\n", pwdLen);
 
   if(nameLen > 0 && pwdLen > 0){
     // char name[nameLen + 1];
@@ -170,8 +172,8 @@ static int parseLoginInfo(char msgIn[], char name[], char pwd[], int msgLen){
     memcpy(pwd, &msgIn[nameLen + 1], pwdLen);
     name[nameLen] = '\0';
     pwd[pwdLen] = '\0';
-    printf("name: %s\n", name);
-    printf("pwd: %s\n", pwd);
+    // printf("name: %s\n", name);
+    // printf("pwd: %s\n", pwd);
     // loginInfo[0] = &name[0];
     // loginInfo[1] = &pwd[0];
     // memcpy(loginInfo[0], &name[0], nameLen + 1); 
@@ -187,6 +189,7 @@ static int parseLoginInfo(char msgIn[], char name[], char pwd[], int msgLen){
 
 static int clientDuplicate(char* name, Client* clients[], int numClients){
   int isDup = 0;
+  printf("Duplicate check name: %s\n", name);
 
   if(numClients == 0){
     return isDup;
@@ -240,17 +243,18 @@ static int getOpenIndex(Client* clients[], int maxClients){
   return index;
 }
 
-static Client* getClientFromFd(int clientFd, int numClients, Client* clients[]){
-  Client* client = NULL; 
+static int getClientIndexFromFd(int clientFd, int numClients, Client* clients[]){
+  int index = -1; 
 
   for(int i = 0; i < numClients; i++){
-    if(clients[i]->sock == clientFd){
-      client = clients[i];
+    if(clients[i] && clients[i]->sock == clientFd){
+      index = i;
+      printf("Found client with fd %d and name %s at index %d\n", clients[i]->sock, clients[i]->name, i);
       break;
     }
   }
 
-  return client;
+  return index;
 }
 
 static int sendMessage(int clientFd, char* senderName, char* msg, int useName, int numClients, Client* clients[]){
@@ -276,16 +280,20 @@ static int sendMessage(int clientFd, char* senderName, char* msg, int useName, i
     strcpy(wMsg, msg);
   }
 
-  printf("calling send for fd %d with msg %s of length %d\n", clientFd, wMsg, len);
+  // printf("calling send for fd %d with msg %s of length %d\n", clientFd, wMsg, len);
   bytesSent = send(clientFd, &wMsg[0], len, 0);
   // bytesSent += send(clientFd, "Way to join the chat", 20, 0);
   if(bytesSent < 1){
     perror("send failed\n");
   }
-  printf("bytesSent: %d\n", bytesSent);
+  // printf("bytesSent: %d\n", bytesSent);
 
   if(bytesSent > 0 && useName){
-    addSavedMessage(getClientFromFd(clientFd, numClients, clients), wMsg);
+    printf("calling gciff from sendMessage\n"); 
+    int index = getClientIndexFromFd(clientFd, numClients, clients);
+    if(index > -1){
+      addSavedMessage(clients[index], wMsg);
+    }
   }
 
   return bytesSent;
@@ -317,8 +325,8 @@ static char* makeQueueMessage(int num){
   strcpy(msg, QUEUE_MESSAGE_FRONT);
   strcat(msg, buff);
   strcat(msg, QUEUE_MESSAGE_BACK);
-  strcat(msg, "\0");
-  char *wMsg = msg;
+  msg[len - 1] = '\0';
+  char *wMsg = &msg[0];
 
   return wMsg;
 }
@@ -328,10 +336,10 @@ static char* makeJoinedMessage(char* name){
   char msg[len];
   strcpy(msg, name);
   strcat(msg, JOINED_MESSAGE_BACK);
-  strcat(msg, "\0");
-  char *wMsg = msg;
+  msg[len - 1] = '\0';
+  char *wMsg = &msg[0];
 
-  printf("make joined msg: %s\n", msg);
+  // printf("make joined msg: %s\n", msg);
   // printf("make joined wMsg: %s\n", wMsg);
   return wMsg;
 }
@@ -341,7 +349,7 @@ static void broadcastMessage(char* senderName, fd_set activeClientSet, char* msg
   for(int i = 0; i < FD_SETSIZE; i++){
     if(FD_ISSET(i, &activeClientSet)){
       // error check return
-      printf("calling sendMessage for fd %d with msg %s\n", i + 1, msg);
+      // printf("calling sendMessage for fd %d with msg %s\n", i + 1, msg);
       sendMessage(i + 1, senderName, msg, 1, numClients, clients);
     }
   }
@@ -417,31 +425,34 @@ int main(int argc, char * argv[]){
 
     for(int i = 0; i < FD_SETSIZE; i++){
       if(FD_ISSET(i, &sendingClientSet)){
-	printf("FD_ISSET true for fd %d\n", i);
+	// printf("FD_ISSET true for fd %d\n", i);
         if(i == servSock){
 	  int clientFd = accept(servSock, (struct sockaddr *)&clientIpAddr, &sinSize);
-	  printf("client fd: %d\n", clientFd);
+	  // printf("New client fd: %d\n", clientFd);
           
 	  if(clientFd < 0){
   	    return err("Accept error");
 	  }
 	  else{
-	    // printf("handleNewClient called\n");
 	    int newC = handleNewClient(clientFd, activeClients, activeClientCount,
 			   	       maxActiveClients, savedClients, maxSavedClients,
 				       clientQueue, queuedCount);	
 	    if(newC == 1){
+	      // printf("New entry to activeClients name: %s\n", activeClients[0]->name);
 	      FD_SET(clientFd, &activeClientSet);
 	      activeClientCount++;
-	      Client* client = getClientFromFd(clientFd, activeClientCount, activeClients); 
-  	      int len = strlen(client->name) + strlen(JOINED_MESSAGE_BACK) + 1;
-  	      char msg[len];
-  	      strcpy(msg, client->name);
-  	      strcat(msg, JOINED_MESSAGE_BACK);
-	      msg[len - 1] = '\0';
-	      printf("msg to broadcast: %s\n", msg);
-	      broadcastMessage("ChatBot", activeClientSet, &msg[0], 
-			       activeClientCount, activeClients);
+	      printf("Calling gciff from new client message\n");
+	      int index = getClientIndexFromFd(clientFd, activeClientCount, activeClients); 
+	      if(index > -1){
+	        Client* client = activeClients[index]; 
+  	        int len = strlen(client->name) + strlen(JOINED_MESSAGE_BACK) + 1;
+  	        char msg[len];
+  	        strcpy(msg, client->name);
+  	        strcat(msg, JOINED_MESSAGE_BACK);
+	        msg[len - 1] = '\0';
+	        broadcastMessage("ChatBot", activeClientSet, &msg[0], 
+			         activeClientCount, activeClients);
+	      }
 	    }
 	    else if(newC == 0){
 	      queuedCount++;
@@ -454,6 +465,7 @@ int main(int argc, char * argv[]){
 	else{
 	  char buff[MESSAGE_LENGTH];
 	  int msgSize = recv(i, buff, MESSAGE_LENGTH, 0); 
+	  buff[msgSize] = '\0';
 
 	  if(msgSize < 0){
 	    err("Client read error");
@@ -466,19 +478,20 @@ int main(int argc, char * argv[]){
 	    activeClientCount--;
 	  }
 	  else{
-	    char *name = getClientFromFd(i, activeClientCount, activeClients)->name;
-	    broadcastMessage(name, activeClientSet, buff, activeClientCount, activeClients);
+	    printf("Calling gciff from existing client message\n");
+	    int index = getClientIndexFromFd(i, activeClientCount, activeClients);
+	    if(index > -1){
+	      Client *client = activeClients[index];
+	      char *name = client->name;
+	      printf("Message from active user with fd %d and name %s\n", i, client->name);
+	      // printf("Message: %s\n", &buff[0]);
+	      broadcastMessage(name, activeClientSet, &buff[0], 
+			       activeClientCount, activeClients);
+	    }
 	  }
 	}
       }
     }
 
-    // clientSock = accept(servSock, (struct sockaddr *)&clientIpAddr, &sinSize);
-
-    // printf("client connected: %d\n", clientSock);
-    // char buff[1024];
-    // int r = recv(clientSock, buff, 1024, 0); 
-    // printf("message: %s\n", buff);
-    // sendMessage(clientSock, "Here's your response");
   }
 }

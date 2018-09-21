@@ -24,7 +24,7 @@ static int validateClient(char* name, char *pwd, Client* clients[], int numClien
 
 static int getOpenIndex(Client* clients[], int maxClients);
 
-static Client* getClientFromFd(int clientFd, int numClients, Client* clients[]);
+static int getClientIndexFromFd(int clientFd, int numClients, Client* clients[]);
 
 static void addSavedMessage(Client* client, char* msg);
 
