@@ -91,14 +91,13 @@ int main(int argc, char const *argv[]) {
             exit(1);
         }
         else{
-            //memcpy(r_msg, buffer, r);
-            //printf("%s\n", r_msg);
-            printf("/s\n", &buffer[0]);
+            printf("%s\n", &buffer[0]);
         }
 
         //Get message from stdin, if it's not "#EXIT", try and send it
         printf("> ");
-        scanf("%s", s_msg);
+        gets(s_msg);
+        strcat(s_msg, "\0");
 
         if(strcmp(s_msg, "#EXIT") == 0){
             break;
