@@ -276,18 +276,13 @@ static int sendMessage(int clientFd, char* senderName, char* msg, int useName, i
     strcpy(wMsg, msg);
   }
 
-  // while(bytesSent < len){
-    // bytesRemaining = len - bytesSent;
-    // char msgChunk[bytesRemaining];
-    // memcpy(msgChunk, &wMsg[bytesSent], bytesRemaining);
-    printf("calling send for fd %d with msg %s of length %d\n", clientFd, wMsg, len);
-    // bytesSent += send(clientFd, msgChunk, bytesRemaining, 0);
-    bytesSent += send(clientFd, &wMsg[0], len, 0);
-    printf("bytesSent: %d\n", bytesSent);
-    // if(bytesSent == 0){
-    //  break;
-    // }
-  // }
+  printf("calling send for fd %d with msg %s of length %d\n", clientFd, wMsg, len);
+  bytesSent = send(clientFd, &wMsg[0], len, 0);
+  // bytesSent += send(clientFd, "Way to join the chat", 20, 0);
+  if(bytesSent < 1){
+    perror("send failed\n");
+  }
+  printf("bytesSent: %d\n", bytesSent);
 
   if(bytesSent > 0 && useName){
     addSavedMessage(getClientFromFd(clientFd, numClients, clients), wMsg);
@@ -346,8 +341,8 @@ static void broadcastMessage(char* senderName, fd_set activeClientSet, char* msg
   for(int i = 0; i < FD_SETSIZE; i++){
     if(FD_ISSET(i, &activeClientSet)){
       // error check return
-      printf("calling sendMessage for fd %d with msg %s\n", i, msg);
-      sendMessage(i, senderName, msg, 1, numClients, clients);
+      printf("calling sendMessage for fd %d with msg %s\n", i + 1, msg);
+      sendMessage(i + 1, senderName, msg, 1, numClients, clients);
     }
   }
 }
@@ -425,6 +420,7 @@ int main(int argc, char * argv[]){
 	printf("FD_ISSET true for fd %d\n", i);
         if(i == servSock){
 	  int clientFd = accept(servSock, (struct sockaddr *)&clientIpAddr, &sinSize);
+	  printf("client fd: %d\n", clientFd);
           
 	  if(clientFd < 0){
   	    return err("Accept error");
@@ -438,13 +434,13 @@ int main(int argc, char * argv[]){
 	      FD_SET(clientFd, &activeClientSet);
 	      activeClientCount++;
 	      Client* client = getClientFromFd(clientFd, activeClientCount, activeClients); 
-  		int len = strlen(client->name) + strlen(JOINED_MESSAGE_BACK) + 1;
-  		char msg[len];
-  		strcpy(msg, client->name);
-  		strcat(msg, JOINED_MESSAGE_BACK);
-  		strcat(msg, "\0");
+  	      int len = strlen(client->name) + strlen(JOINED_MESSAGE_BACK) + 1;
+  	      char msg[len];
+  	      strcpy(msg, client->name);
+  	      strcat(msg, JOINED_MESSAGE_BACK);
+	      msg[len - 1] = '\0';
 	      printf("msg to broadcast: %s\n", msg);
-	      broadcastMessage("ChatBot", activeClientSet, msg, 
+	      broadcastMessage("ChatBot", activeClientSet, &msg[0], 
 			       activeClientCount, activeClients);
 	    }
 	    else if(newC == 0){
